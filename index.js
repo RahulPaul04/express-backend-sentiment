@@ -53,7 +53,7 @@ app.post('/api', async (req, res) => {
         }
     } catch (error) {
         console.error('Fetch error:', error);
-        return res.status(500).json({ error: 'Failed to fetch from external API' });
+        return res.status(500).json({ error: error });
     }
     
 })
