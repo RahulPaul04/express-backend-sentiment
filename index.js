@@ -20,6 +20,25 @@ async function connectdb() {
 
 connectdb()
 
+
+async function postWithRetry(url, payload, maxRetries = 2, retryDelay = 2000) {
+  let attempt = 0;
+  while (attempt <= maxRetries) {
+    try {
+      return await axios.post(url, payload);
+    } catch (error) {
+      const status = error.response?.status;
+      if (attempt < maxRetries && (status === 503 || !error.response)) {
+        console.warn(`Retrying request... attempt ${attempt + 1}`);
+        await new Promise(res => setTimeout(res, retryDelay));
+        attempt++;
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 app.post('/api', async (req, res) => {
     const statement = req.body.statement;
     console.log(statement);
@@ -29,8 +48,8 @@ app.post('/api', async (req, res) => {
     }
 
     try {
-        const response = await axios.post('https://flask-api-yofd.onrender.com/analyse', { statement });
-
+        
+        const response = await postWithRetry('https://flask-api-yofd.onrender.com/analyse', { statement });
         const data = response.data;
 
         const sentiment = new Sentiment({
@@ -45,10 +64,8 @@ app.post('/api', async (req, res) => {
         console.error('Axios error:', error.message);
 
         if (error.response) {
-            
             return res.status(error.response.status).json({ error: error.response.data.message || 'Error from external API' });
         } else {
-            
             return res.status(500).json({ error: 'Failed to reach Flask API' });
         }
     }
