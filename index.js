@@ -25,7 +25,14 @@ async function postWithRetry(url, payload, maxRetries = 2, retryDelay = 2000) {
   let attempt = 0;
   while (attempt <= maxRetries) {
     try {
-      return await axios.post(url, payload);
+      return await axios.post(url, payload, {
+        timeout: 50000, 
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Node.js Server',
+          'Accept': 'application/json'
+        }
+      });
     } catch (error) {
       const status = error.response?.status;
       if (attempt < maxRetries && (status === 503 || !error.response)) {
@@ -38,6 +45,7 @@ async function postWithRetry(url, payload, maxRetries = 2, retryDelay = 2000) {
     }
   }
 }
+
 
 app.post('/api', async (req, res) => {
     const statement = req.body.statement;
